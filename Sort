@@ -1,0 +1,31 @@
+１．データ作成
+
+　　List<Employee> employees;
+
+    @Before
+    public void setup() {
+
+        employees = new ArrayList<>();
+        employees.add(new Employee(123, "Jack", "Johnson", LocalDate.of(1988, Month.APRIL, 12)));
+        employees.add(new Employee(345, "Cindy", "Bower", LocalDate.of(2011, Month.DECEMBER, 15)));
+        employees.add(new Employee(567, "Perry", "Node", LocalDate.of(2005, Month.JUNE, 07)));
+        employees.add(new Employee(467, "Pam", "Krauss", LocalDate.of(2005, Month.JUNE, 07)));
+        employees.add(new Employee(435, "Fred", "Shak", LocalDate.of(1988, Month.APRIL, 17)));
+        employees.add(new Employee(678, "Ann", "Lee", LocalDate.of(2007, Month.APRIL, 12)));
+    }
+２．ソートする
+    @Test
+　　public void multiple_sort() {
+
+    　　Comparator<Employee> byFirstName = (e1, e2) -> e1
+            .getEmployeeFirstName().compareTo(e2.getEmployeeFirstName());
+
+    　　Comparator<Employee> byLastName = (e1, e2) -> e1.getEmployeeLastName()
+            .compareTo(e2.getEmployeeLastName());
+
+    　　employees.stream().sorted(byFirstName.thenComparing(byLastName))
+            .forEach(e -> System.out.println(e));
+      
+       // ソートした結果を返す場合
+       final List<Employee> sortList = employees.stream().sorted(byFirstName.thenComparing(byLastName)).collect(Collectors.toList())
+　　}
