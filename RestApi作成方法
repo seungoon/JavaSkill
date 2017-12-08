@@ -1,0 +1,9 @@
+※たった30秒でREST APIのモックが作れる JSON Serverでフロントエンド開発が捗る 
+
+・要件
+　RESTfulの原則とAPIの使用方法についての基礎的な知識が必要です。
+　次のツールが必要です。
+    •Node.js：JSON ServerはNode.js上に構築する
+    •curl：モックサーバーのルート確認に使う
+
+　参考サイト：https://www.webprofessional.jp/mock-rest-apis-using-json-server/
