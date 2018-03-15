@@ -1,0 +1,91 @@
+※参考サイト：https://qiita.com/yuji38kwmt/items/9edb4b17768d112ae43b
+
+⇒注意点：ファイル名称について、全角文字、二重引用符、半角スペース等を考慮すべきである。
+
+1. レスポンスのコンテントタイプとヘッダを設定する
+画像や zip などのコンテンツをダウンロードさせるには、コンテントタイプ（Content-Type）に “application/octet-stream” を設定した
+レスポンスを返してやります。
+
+“application/octet-stream” が設定されていると、多くのブラウザは「このコンテンツをダウンロードしますか？」とダイアログを表示させる
+実装になっているそうです。
+なので、この仕組みを使ってコンテンツを自分のマシンにとり込んでしまうというわけです。
+
+項目はコンテントタイプ以外にもヘッダに次のものを設定します。
+
+コンテンツの名称
+コンテンツのサイズ（容量）
+コンテンツの名称はたいていの場合ファイル名になると思います。
+ダウンロードさせる画像ファイルや zip ファイルなどの名称をそのまま設定すれば OK です。
+
+コンテンツのサイズはダウンロードさせるコンテンツの容量になります。
+単位はバイトです。
+
+※参考contentTypeの定義
+choice = choice.trim();
+if (choice.equals("pdf")) {
+	contentType = "application/pdf";
+	downloadfilename = DOWNLOAD_PDF_FILENAME;
+} else if (choice.equals("txt")) {
+	contentType = "text/plain";
+	downloadfilename = DOWNLOAD_TXT_FILENAME;
+} else if (choice.equals("csv")) {
+	contentType = "text/comma-separated-values";
+	downloadfilename = DOWNLOAD_CSV_FILENAME;
+} else if (choice.equals("xls")) {
+	contentType = "application/vnd.ms-excel";
+	downloadfilename = DOWNLOAD_XLS_FILENAME;
+} else {
+	throw new ServletException("Parameter is illegular value!! [" + choice + "].");
+}
+
+2. Java によるサンプルソースコード
+Java でこの処理を行うサンプルを書いてみました。
+他の言語でもやることは変わらないと思うので、参考にはなるんじゃないかと思います。
+
+/**
+ * コンテンツ（{@code File} オブジェクト）をダウンロードする。
+ * 
+ * @param response コンテンツをダウンロードするのに使用する {@code HttpServletResponse} オブジェクト
+ * @param file ダウンロードするコンテンツを格納した {@code File} オブジェクト
+ * @throws FileNotFoundException 画像ファイルが存在しなかった場合
+ * @throws IOException 画像ファイルの読み書きに失敗した場合
+ */
+public void download(HttpServletResponse response, File file) throws FileNotFoundException, IOException {
+    setUpResponseForDownload(response, file);
+
+    copyFileToResponse(response, new FileInputStream(file));
+}
+
+/**
+ * コンテンツをダウンロードする際のレスポンスを設定する。
+ * 
+ * 次をレスポンスとヘッダに設定する。
+ * 
+ * <ul>
+ * <li>ContentType に "application/octet-stream" を設定</li>
+ * <li>Header にコンテンツの名称を設定</li>
+ * <li>Header にコンテンツのサイズ（容量）を設定</li>
+ * </ul>
+ * 
+ * @param response コンテンツをダウンロードするのに使用する {@code HttpServletResponse} オブジェクト
+ * @param file ダウンロードするコンテンツを格納した {@code File} オブジェクト
+ */
+private void setUpResponseForDownload(HttpServletResponse response, File file) {
+    response.setContentType("application/octet-stream");
+    response.setHeader("Content-Disposition", "attachment; filename=\"" + file.getName() + "\"");
+    response.setHeader("Content-Length", String.valueOf(FileUtils.sizeOf(file)));
+}
+
+/**
+ * コンテンツをレスポンスに設定する。
+ * 
+ * @param response コンテンツをダウンロードするのに使用する {@code HttpServletResponse} オブジェクト
+ * @param inputStream ダウンロードするコンテンツの {@code InputStream} オブジェクト
+ * @throws FileNotFoundException 画像ファイルが存在しなかった場合
+ * @throws IOException 画像ファイルの読み書きに失敗した場合
+ */
+private void copyFileToResponse(HttpServletResponse response,
+        InputStream inputStream) throws IOException, FileNotFoundException {
+    IOUtils.copy(inputStream, response.getOutputStream());
+}
+コンテンツのサイズ（容量）を計算する方法として Commons IO の FileUtils#sizeOf メソッドを使っています。
