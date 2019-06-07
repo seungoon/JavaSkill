@@ -1,0 +1,136 @@
+
+/**
+ * 差分結果フラグ
+ * 1 : 差分あり
+ * 0 : 差分なし
+ * 9 : 比較不可
+ */
+private static final String RESULT_CHANGED = "1";
+private static final String RESULT_NO_CHANGED ="0";
+
+/**
+ * 同じ構造を持つクラスを比較し、比較結果を格納して返却する。
+ * 
+ * @param parenetObject : 比較元
+ * @param childObject : 比較先
+ * @param resultObject : 
+ * @return
+ * @throws ApplicationException 
+ */
+public static Object doCompAndRtnCompRslt(Object parenetObject,Object childObject, Class resultObject) throws ApplicationException {
+	
+	final String NAME_SUID = "serialVersionUID";		
+	Object compareModel = new Object();
+	
+	try {
+		compareModel = resultObject.newInstance();
+	
+		if (parenetObject == null) {
+			return compareModel;
+		}
+		
+		for(Field field : compareModel.getClass().getDeclaredFields()) {
+			String name = field.getName();
+			if (NAME_SUID.contentEquals(name)) {
+				continue;
+			}
+			String prop = Character.toUpperCase(name.charAt(0)) + name.substring(1);
+
+			Method getterP = parenetObject.getClass().getMethod("get" + prop);
+			Method getterC = childObject.getClass().getMethod("get" + prop);
+
+			Class<?> c = Class.forName(getterP.getReturnType().getCanonicalName());
+			
+			if (List.class.equals(c) || Map.class.equals(c)) {
+				continue;
+			}
+		
+			Method setter = compareModel.getClass().getMethod("set" + prop, String.class);
+			setter.invoke(compareModel, isChangedAnsStr(
+					getterP.invoke(parenetObject), getterC.invoke(childObject)));
+		}
+	} catch (Exception e) {
+		throw new ApplicationException(e);
+	}
+	
+	return compareModel;
+}
+	
+// 型ごとに比較メソッドを切り替える
+private static String isChangedAnsStr(Object masterTarget, Object target) throws Exception {
+	if ((masterTarget instanceof Timestamp) && target == null) {
+		return RESULT_CHANGED;
+	}
+
+	if ((masterTarget instanceof BigDecimal) && target == null) {
+		return RESULT_CHANGED;
+	}
+	
+	if (masterTarget == null) {
+		masterTarget = "";
+		if (target == null) {
+			target = masterTarget.getClass().newInstance();
+		} else {
+			return RESULT_CHANGED;
+		}
+		
+	}
+	
+	// Collection は全て無視
+	if (masterTarget instanceof Collection) {
+		return null;
+	}
+
+	// String型
+	if (masterTarget instanceof String) {
+		return isChangedAnsStr((String) masterTarget, (String)target);
+	}
+
+	// BigDecimal型
+	if (masterTarget instanceof BigDecimal) {
+		return isChangedAnsStr((BigDecimal) masterTarget, (BigDecimal)target);
+	}
+
+	// Timestamp型
+	if (masterTarget instanceof Timestamp) {
+		return isChangedAnsStr((Timestamp) masterTarget, (Timestamp)target);
+	}
+
+	// int型(Object経由なので実態はInteger型)
+	if (masterTarget instanceof Integer) {
+		return isChangedAnsStr((Integer) masterTarget, (Integer)target);
+	}
+
+	return null;
+}
+
+/**
+ * String のための比較
+ */
+public static String isChangedAnsStr(String masterTarget, String target) {
+	return  (StringUtils.isEmpty(masterTarget) && StringUtils.isEmpty(target)) 
+			|| (StringUtils.isNotEmpty(masterTarget) && masterTarget.equals(target))
+			? RESULT_NO_CHANGED : RESULT_CHANGED;
+}
+
+/**
+ * int のための比較
+ */
+public static String isChangedAnsStr(Integer masterTarget, Integer target) {
+	return masterTarget.equals(target) ? RESULT_NO_CHANGED : RESULT_CHANGED;
+}
+
+/**
+ * BigDecimal のための比較
+ */
+public static String isChangedAnsStr(BigDecimal masterTarget, BigDecimal target) {
+	return masterTarget.compareTo(target) == 0 ? RESULT_NO_CHANGED : RESULT_CHANGED;
+}
+
+/**
+ * Timestamp のための比較
+ */
+public static String isChangedAnsStr(Timestamp masterTarget, Timestamp target) {
+	return masterTarget.compareTo(target) == 0 ? RESULT_NO_CHANGED : RESULT_CHANGED;
+}
+
